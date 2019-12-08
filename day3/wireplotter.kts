@@ -59,10 +59,42 @@ class Wire(routing: String) {
                 }
             }
         }
+
+    sealed class StepsToPointResult {
+        data class Success(val steps: Int): StepsToPointResult()
+        object PointNotVisited: StepsToPointResult()
+    }
+
+    fun stepsToPoint(point: Point): StepsToPointResult {
+        var currentStep = 0
+        var currentPoint = Point(0, 0)
+        if (currentPoint == point) {
+            return StepsToPointResult.Success(currentStep)
+        }
+        for (instruction in instructions) {
+            for (instructionStep in 1..instruction.distance) {
+                currentPoint = currentPoint.moveIn(instruction.direction)
+                currentStep += 1
+                if (currentPoint == point) {
+                    return StepsToPointResult.Success(currentStep)
+                }
+            }
+        }
+        return StepsToPointResult.PointNotVisited
+    }
 }
 
 useInputLines { lines ->
     val (wireA, wireB) = lines.map(::Wire).toList()
     val intersections = wireA.visitedPoints.intersect(wireB.visitedPoints)
-    print(intersections.map { it.distanceFrom() }.sorted().first())
+    println(intersections.map { it.distanceFrom() }.sorted().first())
+    println(intersections.map {
+        val a = wireA.stepsToPoint(it)
+        val b = wireB.stepsToPoint(it)
+        when {
+            a is Wire.StepsToPointResult.Success && b is Wire.StepsToPointResult.Success ->
+                a.steps + b.steps
+            else -> error("Point not visited by both wires")
+        }
+    }.sorted().first())
 }
